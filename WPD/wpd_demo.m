@@ -1,5 +1,5 @@
 function totalSteps = wpd_demo 
-    data = xlsread('traces_test1.csv');
+    data = xlsread('walkTest.csv');
     %Extract the data from the file
     time = data(:,1);
     xReading = data(:,2);
