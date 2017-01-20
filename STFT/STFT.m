@@ -28,16 +28,17 @@ end
 
 %number of entries per frame
 nsample = round(frameLength * fs / 1000); 
-window = hamming(nsample, 'periodic')
+window = hamming(nsample, 'periodic');
 
 N = length(x);
-S = [];
+Stft = [];
 pos = 1;
+
 
 %while the frame lies within the acceleration readings vector
 while(pos+nsample <=N)
     %set up the frame
-    frame = x(pos: pos + nsample - 1);
+    frame = x(pos: pos + nsample - 1)';
     %set starting position of new frame
     pos = pos + (nsample - frameOverlap);
     %perform the fourier transform on this frame 
@@ -49,17 +50,31 @@ while(pos+nsample <=N)
     %the column length is the number of frames
     
     %add to S, the 1st column of the fft from 1 to half of the samples
-    stft = [S Y(1:round(nsample/2), 1)];  
+    Stft = [Stft Y(1:round(nsample/2), 1)];  
 end
+
 
 %unsure about this bit
 
 %Generate the frequency vector
 % # entries = window length
+% vector of M rows, 1 column of frequencies 
+% Take set of values: 0, 1, 2....(nsample/2)-1;
 % 
-%F = (0:round(nsample/2)-1)' /nsample * freq;
+%F = (0:round(nsample/2)-1)' / nsample * freq;
+%divide each element by #in frame * freq i.e. number of fft points
 
-%???????
+%1 row, K columns with values that correspond to center of each frame
+%[round(nsample/2), round(nsample/2) + (nsample - noverlap),
+%round(nsample/2) + 2(nsample - noverlap)...
+    % round(nsample/2) + m(nsample - noverlap)
+    % m = fix((N-1-round(nsample/2) - round(nsample/2))/(nsample -
+    % noverlap)
+    
+    %fix rounds each element to nearest integer towards zero
+    
+    %start at half of nsample, add overlap each time
+    %until half of final frame
 %T = (round(nsample/2):(nsample-noverlap):N-1-round(nsample/2))/freq;
 
 end
