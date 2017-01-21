@@ -2,8 +2,9 @@
 
 function Stft = STFT(x, frameOverlap, frameLength, fs, show)
 
+threshSpecEnergy = 20;
 % length of the signal
-xlen = length(x);
+xlen = length(x(:,2));
 
 
 %length of each frame overlap
@@ -17,7 +18,7 @@ if ~exist ('frameLength', 'var') || isempty(frameLength)
 end
 
 if ~exist('fs', 'var') || isempty(fs)
-     fs = 10000;
+     fs = 7000;
 end
 
 %plot or not, boolean
@@ -30,7 +31,8 @@ end
 nsample = round(frameLength * fs / 1000); 
 window = hamming(nsample, 'periodic');
 
-N = length(x);
+acc = x(:,2);
+N = length(acc);
 Stft = [];
 pos = 1;
 
@@ -38,7 +40,7 @@ pos = 1;
 %while the frame lies within the acceleration readings vector
 while(pos+nsample <=N)
     %set up the frame
-    frame = x(pos: pos + nsample - 1)';
+    frame = acc(pos: pos + nsample - 1);
     %set starting position of new frame
     pos = pos + (nsample - frameOverlap);
     %perform the fourier transform on this frame 
@@ -53,6 +55,9 @@ while(pos+nsample <=N)
     Stft = [Stft Y(1:round(nsample/2), 1)];  
 end
 
+handleSTFT(Stft, threshSpecEnergy);
+
+spectrogram(acc, window, frameOverlap);
 
 %unsure about this bit
 
@@ -60,8 +65,11 @@ end
 % # entries = window length
 % vector of M rows, 1 column of frequencies 
 % Take set of values: 0, 1, 2....(nsample/2)-1;
+
 % 
 %F = (0:round(nsample/2)-1)' / nsample * freq;
+
+
 %divide each element by #in frame * freq i.e. number of fft points
 
 %1 row, K columns with values that correspond to center of each frame
@@ -75,7 +83,15 @@ end
     
     %start at half of nsample, add overlap each time
     %until half of final frame
+    
 %T = (round(nsample/2):(nsample-noverlap):N-1-round(nsample/2))/freq;
 
 end
+
+function results = handleSTFT(stft, threshSpecEnergy)
+
+
+
+end
+
 

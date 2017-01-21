@@ -15,4 +15,4 @@ for i=1:sz
     acceleration(i,2) = sqrt((X(i)*X(i)) + (Y(i)*Y(i)) + (Z(i)*Z(i)));
 end
 
-stft= STFT(acceleration, 20, 10, 10000, 0);
+stft= STFT(acceleration, 20, 10, 7000, 0);
