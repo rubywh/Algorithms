@@ -1,6 +1,4 @@
-%not yet working
-
-function Stft = STFT(x, frameOverlap, frameLength, fs, show)
+function [T,F, Stft] = STFT(x, frameOverlap, frameLength, fs, show)
 
 threshSpecEnergy = 20;
 % length of the signal
@@ -28,7 +26,7 @@ if ~exist ('show', 'var') || isempty(show)
 end
 
 %number of entries per frame
-nsample = round(frameLength * fs / 1000); 
+nsample = round(frameLength * fs / 1000)
 window = hamming(nsample, 'periodic');
 
 acc = x(:,2);
@@ -62,35 +60,18 @@ spectrogram(acc, window, frameOverlap);
 %unsure about this bit
 
 %Generate the frequency vector
-% # entries = window length
-% vector of M rows, 1 column of frequencies 
 % Take set of values: 0, 1, 2....(nsample/2)-1;
+% f = 1/T = fs/N
 
-% 
-%F = (0:round(nsample/2)-1)' / nsample * freq;
-
-
-%divide each element by #in frame * freq i.e. number of fft points
-
-%1 row, K columns with values that correspond to center of each frame
-%[round(nsample/2), round(nsample/2) + (nsample - noverlap),
-%round(nsample/2) + 2(nsample - noverlap)...
-    % round(nsample/2) + m(nsample - noverlap)
-    % m = fix((N-1-round(nsample/2) - round(nsample/2))/(nsample -
-    % noverlap)
-    
-    %fix rounds each element to nearest integer towards zero
-    
-    %start at half of nsample, add overlap each time
-    %until half of final frame
-    
-%T = (round(nsample/2):(nsample-noverlap):N-1-round(nsample/2))/freq;
+    F = (0:round(nsample/2)-1)' / nsample * fs
+  
+    %T = N/fs where N = number of samples acquired
+    % time at which STFT calculated each time, i.e. centre of frame
+    T = (round(nsample/2):(nsample-frameOverlap):N-1-round(nsample/2))/fs;
 
 end
 
 function results = handleSTFT(stft, threshSpecEnergy)
-
-
 
 end
 

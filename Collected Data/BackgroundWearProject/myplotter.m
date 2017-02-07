@@ -1,6 +1,6 @@
 %A script to plot acceleration over time
 
-M = xlsread('210120171500_accelerometer.csv');
+M = xlsread('traces_test1.csv');
 time = M(:,1);
 X = M(:,2);
 Y = M(:,3);

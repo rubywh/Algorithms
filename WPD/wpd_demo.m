@@ -1,4 +1,4 @@
-function totalSteps = wpd_demo 
+function totalSteps = wpd_demo(thresh, wsize, minTime, wlen)
     data = xlsread('walkTest.csv');
     %Extract the data from the file
     time = data(:,1);
@@ -6,12 +6,6 @@ function totalSteps = wpd_demo
     yReading = data(:,3);
     zReading = data(:,4);
     format long;
-
-    %initialisation
-    thresh = 10;
-    cmmWinSize = 300;
-    minTimeBetweenPeaks = 300;
-    wpdWinSize = 500;
 
     %set up vector with time and acceleration data
     sz = length(xReading);
@@ -23,5 +17,5 @@ function totalSteps = wpd_demo
         timeVsAcceleration(i, 2) = sqrt((xReading(i)*xReading(i)) + (yReading(i)*yReading(i)) + (zReading(i)*zReading(i)));
     end
 
-    totalSteps = wpdAlgorithm(timeVsAcceleration, thresh, cmmWinSize, minTimeBetweenPeaks, wpdWinSize);
+    totalSteps = wpdAlgorithm(timeVsAcceleration, thresh, wsize, minTime, wlen);
 end
