@@ -59,19 +59,8 @@ clen = length(time);
 
 walking = zeros(clen, 1);
 
-z = 1;
-for p = time(1):nascWindowSize:time(clen)-nascWindowSize
-%for p=1:clen
+p = time(1);
 
-%{
-    current = find(time>p,1)-1;
-    thisStd = stdDeviation(current, 1);
-    
-    if thisStd < sdWalkingThresh
-        continue;
-    else
-        %}
-        
         %set up the window
          mIdx = find(time>p,1);
         %If dealing with the first reading
@@ -93,29 +82,28 @@ for p = time(1):nascWindowSize:time(clen)-nascWindowSize
         nIdx = find(time>timeLimit,1);
     
         sdThisWindow = std(acc(start:nIdx-1));
-        if sdThisWindow < sdWalkingThresh
-            continue;
-        end
+        if sdThisWindow > sdWalkingThresh
               
         windowEnd = nIdx - 1;
         windowCount = length(acc(start:windowEnd));
         %do Nasc on all in window
         [tOpt, nascForWindow] = nasc(timeVsAcceleration, start, windowEnd, tmax, tmin, windowCount);
         
-        %maxForWindow = max(nascForWindow(:,1));
-        
         if nascForWindow > RThresh
             walking(start:windowEnd, 1) = 1;
-            toptResults(z, 1) = tOpt;
-            toptResults(z, 2) = nascForWindow;
-            stepsTaken(z, 1) = (2000000000./(toptResults(z,1)./2));
-            stepsSoFar = sum(stepsTaken);
-            z=z+1;
         else
             walking(start:windowEnd, 1) = 0;
         end
-end
-%stepsTaken = zeros(length(toptResults(:,1)), 1);
+        end
+        
+    %nascResult = nasc4(timeVsAcceleration, tOpt);
+            
+firstTime = timeVsAcceleration(1,1);
+lastTime = timeVsAcceleration(clen,1);
+timeWalking = lastTime - firstTime; 
+%{
+meanTOpt = mean(toptResults(:,1));
+stepsTaken = timeWalking./(meanTOpt./2);
+%}
 
-   
-
+stepsTaken = timeWalking./(tOpt/2);

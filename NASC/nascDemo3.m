@@ -1,3 +1,5 @@
+%nasc version 3: find t opt in first window, stick with that, if not
+%counted as a step try to widen the window
 data = xlsread('traces_test5.csv');
 
  idx = data(:,2) == 1;
@@ -34,18 +36,8 @@ data = xlsread('traces_test5.csv');
     timeVsAcceleration(timeVsAcceleration(:, 1)>=tend, :) = [];
     timeVsAcceleration(:, 1) = (timeVsAcceleration(:, 1) - timeVsAcceleration(1,1));
     
-    figure
-    plot(timeVsAcceleration(:,1), timeVsAcceleration(:,2));
-    title('Raw Data');
-    xlabel('Time');
-    ylabel('Acceleration (m/s^2)');
-                
-        
-sdWindow = 900000000;
-sdWalkingThresh = 0.6;
 
-%calculate the standard deviations 
-stdDeviation = StandardDeviation(timeVsAcceleration, sdWindow);
+sdWalkingThresh = 0.6;
 
 RThresh = 0.4;
 tmin = 400000000;
@@ -58,20 +50,11 @@ acc = timeVsAcceleration(:,2);
 clen = length(time);
 
 walking = zeros(clen, 1);
-
+attempt = 0;
 z = 1;
+foundT = 0;
 for p = time(1):nascWindowSize:time(clen)-nascWindowSize
-%for p=1:clen
 
-%{
-    current = find(time>p,1)-1;
-    thisStd = stdDeviation(current, 1);
-    
-    if thisStd < sdWalkingThresh
-        continue;
-    else
-        %}
-        
         %set up the window
          mIdx = find(time>p,1);
         %If dealing with the first reading
@@ -100,22 +83,52 @@ for p = time(1):nascWindowSize:time(clen)-nascWindowSize
         windowEnd = nIdx - 1;
         windowCount = length(acc(start:windowEnd));
         %do Nasc on all in window
-        [tOpt, nascForWindow] = nasc(timeVsAcceleration, start, windowEnd, tmax, tmin, windowCount);
         
-        %maxForWindow = max(nascForWindow(:,1));
-        
-        if nascForWindow > RThresh
-            walking(start:windowEnd, 1) = 1;
-            toptResults(z, 1) = tOpt;
-            toptResults(z, 2) = nascForWindow;
-            stepsTaken(z, 1) = (2000000000./(toptResults(z,1)./2));
-            stepsSoFar = sum(stepsTaken);
-            z=z+1;
+        if foundT == 0 
+            [tOpt, nascForWindow] = nasc(timeVsAcceleration, start, windowEnd, tmax, tmin, windowCount);
+            if nascForWindow > RThresh
+                walking(start:windowEnd, 1) = 1;
+                toptResults(z, 1) = tOpt;
+                toptResults(z, 2) = nascForWindow;
+                stepsTaken(z,1) = (2000000000./(toptResults(z,1)./2));
+                stepsSoFar = sum(stepsTaken);
+                foundT = 1;
+                refinedT = tOpt;
+                z=z+1; 
+                message = 'found initial topt';
+                disp(message);
+            else
+                walking(start:windowEnd, 1) = 0;
+                foundT = 0;
+                continue;
+            end
         else
-            walking(start:windowEnd, 1) = 0;
+            [provisTOpt, provisNasc] = nascv3RefinedT(timeVsAcceleration, start, windowEnd, refinedT);
+            if provisNasc>RThresh
+                message = 'used first discovered topt';
+                disp(message);
+                walking(start:windowEnd, 1) = 1;
+                toptResults(z, 1) = provisTOpt;
+                toptResults(z, 2) = provisNasc;
+                stepsTaken(z,1) = (2000000000./(toptResults(z,1)./2));
+                stepsSoFar = sum(stepsTaken);
+                z=z+1; 
+                continue;
+            else
+                while attempt<RThresh
+                    tMin = refinedT - 10000000;
+                    tMax = refinedT + 10000000;
+                    [testTOpt, attempt] = nasc(timeVsAcceleration, start, windowEnd, tmax, tmin, windowCount);
+                    message = 'using adjusted topt';
+                    disp(message);
+                end
+                walking(start:windowEnd, 1) = 1;
+                toptResults(z, 1) = testTOpt;
+                toptResults(z, 2) = attempt;  
+                stepsTaken(z, 1) = (2000000000./(toptResults(z,1)./2));
+                stepsSoFar = sum(stepsTaken);
+                foundT = 1;
+                z=z+1; 
+            end
         end
 end
-%stepsTaken = zeros(length(toptResults(:,1)), 1);
-
-   
-

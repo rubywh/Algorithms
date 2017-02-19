@@ -1,22 +1,21 @@
-function [T,F, Stft] = STFT(x, frameOverlap, frameLength, fs, show)
-
-threshSpecEnergy = 20;
-% length of the signal
-xlen = length(x(:,2));
-
+function [T,F,Stft] = STFT(acceleration, overlap, FFTLength, windowSize, threshold, show)
 
 %length of each frame overlap
-if ~exist ('frameOverlap', 'var') || isempty(frameOverlap)
-    frameOverlap = frameLength / 2;
+if ~exist ('overlap', 'var') || isempty(overlap)
+    overlap = FFTLength / 2;
 end
 
 %length of each frame
-if ~exist ('frameLength', 'var') || isempty(frameLength)
-    frameLength = 20;
+if ~exist ('FFTLength', 'var') || isempty(FFTLength)
+    FFTLength = 20;
 end
 
-if ~exist('fs', 'var') || isempty(fs)
-     fs = 7000;
+if ~exist('windowSize', 'var') || isempty(windowSize)
+     windowSize = 700000000;
+end
+
+if ~exist('threshold', 'var') || isempty(threshold)
+     threshold = 20;
 end
 
 %plot or not, boolean
@@ -25,53 +24,81 @@ if ~exist ('show', 'var') || isempty(show)
     show = 0;
 end
 
-%number of entries per frame
-nsample = round(frameLength * fs / 1000)
-window = hamming(nsample, 'periodic');
+time = acceleration(:,1);
+acc = acceleration(:,2)-mean(acceleration(:,2));
+dataSize = length(acc);
 
-acc = x(:,2);
-N = length(acc);
-Stft = [];
-pos = 1;
+matrixRows = ceil(FFTLength/2 + 1);
 
+%Number of columns can't depend on window size as this changed on each
+%iteration. So dynamically add columns to Stft when needed..
+%matrixCols = floor((dataSize-windowSize)/(windowSize - overlap)) + 1;
 
-%while the frame lies within the acceleration readings vector
-while(pos+nsample <=N)
-    %set up the frame
-    frame = acc(pos: pos + nsample - 1);
-    %set starting position of new frame
-    pos = pos + (nsample - frameOverlap);
-    %perform the fourier transform on this frame 
-    %i.e. multiply accelerometer data currently in frame by the window function
-    %perform this over nsample number of points
-    Y = fft(frame .* window, nsample);
-    %add the data from this frame to the spectogram
-    %The row length is the length of the frame
-    %the column length is the number of frames
+Stft = zeros(matrixRows)';
+
+%Start at first reading, jump by windowSize each iteration
+for i = time(1):windowSize:(time(dataSize)-windowSize)
     
-    %add to S, the 1st column of the fft from 1 to half of the samples
-    Stft = [Stft Y(1:round(nsample/2), 1)];  
+
+    %Find the index of the reading to be first in the window
+    %i.e. the first one with time elapsed > i, such that it is the next
+    %reading after the end of the previous window
+    mIdx = find(time>i,1);
+    
+    %empty the window
+    currentWindow = [];
+    
+     %If dealing with the first reading
+        if i == 0
+            %The window should start at this reading
+            start = 1;
+        else 
+            start = mIdx;
+        end
+
+        %Set the time limit to the time at which the last item in the window
+        %cannot exceed
+        timeLimit = time(start) + windowSize;
+
+        %Find the first item that exceeds the window timelimit
+        %The last item in the window will be the reading before this one
+        nIdx = find(time>timeLimit,1);
+
+        currentWindow(:,1) = acceleration(start:nIdx-1);
+
+        %Count the number of entries in the window
+        %This will vary due to a varying sampling rate
+        wSize = length(currentWindow);
+        
+        %Construct window function
+        windowFunction = hamming(wSize, 'periodic');
+
+        %perform the fourier transform on this window 
+        %i.e. multiply accelerometer data currently in window by the window function
+        Y = fft(currentWindow.*windowFunction, FFTLength);
+
+        %add the data from this frame to the spectogram
+        %The row length is the length of the frame
+        %the column length is the number of frames
+        
+        %add to S, the 1st column of the fft from 1 to half of the samples
+        %Stft = [Stft Y(1:round(nsample/2), 1)];  
+
+        %Stft(:,currentColumn) = Y(1:matrixRows);
+
+        Stft = [Stft Y(1:matrixRows)];
+        
 end
+    
 
-handleSTFT(Stft, threshSpecEnergy);
-
-spectrogram(acc, window, frameOverlap);
-
-%unsure about this bit
-
-%Generate the frequency vector
-% Take set of values: 0, 1, 2....(nsample/2)-1;
-% f = 1/T = fs/N
-
-    F = (0:round(nsample/2)-1)' / nsample * fs
-  
-    %T = N/fs where N = number of samples acquired
-    % time at which STFT calculated each time, i.e. centre of frame
-    T = (round(nsample/2):(nsample-frameOverlap):N-1-round(nsample/2))/fs;
-
-end
-
-function results = handleSTFT(stft, threshSpecEnergy)
+ %%!! 
+    for col = 1: length(Stft)
+       % spectralEnergy = abs(Stft(:,col)).^2;
+       Energy = sum(abs(Stft(:,col)).^2) / length(Stft(:,col))
+    end
+    
+    T=[];
+    F=[];
 
 end
 

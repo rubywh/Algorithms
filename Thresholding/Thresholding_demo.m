@@ -13,8 +13,6 @@ data = xlsread('traces_test2.csv');
     zReading = data(:,4);
     format long;
     
-    
-    
 %%% Indicate ground truths per trace %%%
 
   %{
@@ -70,6 +68,6 @@ data = xlsread('traces_test2.csv');
 
     
 %Perform thresholding
-thresholding_script(timeVsAcceleration, accMagThresh, enerWalkingThresh, enerWinSize, sdWinSize, sdWalkingThresh);
+walkResults = thresholding_script(timeVsAcceleration, accMagThresh, enerWalkingThresh, enerWinSize, sdWinSize, sdWalkingThresh);
     
     

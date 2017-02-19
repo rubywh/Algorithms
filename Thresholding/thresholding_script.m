@@ -2,7 +2,7 @@
 
 %%% Master Function to get results for each metric %%%
 
-function thresholding_script(timeVsAcceleration, accMagThresh, enerWalkingThresh, enerWinSize, sdWinSize, sdWalkingThresh)
+function sdWalking = thresholding_script(timeVsAcceleration, accMagThresh, enerWalkingThresh, enerWinSize, sdWinSize, sdWalkingThresh)
  
 
     time = timeVsAcceleration(:,1);
@@ -112,8 +112,8 @@ end
   calculated standard deviation for that window. Uses a jumping window for
   now but may need sliding window?
 %}
-function mySd = thresh_sd(sdInTime, sdInVals, sdWinSize)
-
+function o = thresh_sd(sdInTime, sdInVals, sdWinSize)
+%{
     aSz = length(sdInVals);
 
     for j = sdInTime(1):sdWinSize:sdInTime(aSz)
@@ -134,16 +134,32 @@ function mySd = thresh_sd(sdInTime, sdInVals, sdWinSize)
         mySd(aStart:anIdx-1,1) = aWindowTimes;
         mySd(aStart:anIdx-1,2) = thisStd;
         
-    %{
-    window = zeros(sdWinSize);
-        %Calculate sd of vals over sliding window
-        for i=1:(sz - sdWinSize + 1)
-                window = vals(i:i+sdWinSize-1);
-                mySd(i,1) = time(i);
-                mySd(i,2) = vals(i);
-                mySd(i,3) = std(window);
-        end
-    %}
+      %}
+    
+    
+    aSz = length(sdInVals);
+       for j = 1:aSz
+        aTimeLimit = sdInTime(j) + sdWinSize;
+        amIdx = find(sdInTime>sdInTime(j),1);
+        aStart = amIdx-1;
+        anIdx = find(sdInTime>aTimeLimit,1);
+
+        %Set up the window
+        aWindowTimes= sdInTime(aStart:anIdx-1);
+        aWindowVals = sdInVals(aStart:anIdx-1);
+        aWindowCount = length(aWindowVals);   
+        windowCounts(j,1) = aWindowCount;
+       end
+    
+    
+    
+    o = ones(aSz, 1);
+    
+    for i = 1:aSz
+        thisWinSize = windowCounts(i,1);  
+        h = floor(thisWinSize /2);
+        o(i,1) = sdInTime(i);
+        o(i,2) = std(sdInVals(max(1, i - h): min(aSz, i + h)));
     end
 end
 
