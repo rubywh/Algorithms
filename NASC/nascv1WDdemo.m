@@ -1,5 +1,5 @@
+function [walkingPeriods] = nascv1WDdemo(source, tstart, tend, tmin, tmax, sm)
 
-function [stepsTaken] = nascdemov1(source, tstart, tend, tmin, tmax, sm)
 data = xlsread(source);
 
  dataTime = data(:,1);
@@ -68,46 +68,67 @@ data = xlsread(source);
        timeVsAcceleration(:,2) = smooth(timeVsAcceleration(:,2), 5);
     end
    
-%sdWalkingThresh = 0.6;
-RThresh = 0.4;
+sdWalkingThresh = 0.6;
+RThresh = 0.3;
 
-%walking = zeros(clen, 1);
-
+clen = length(timeVsAcceleration(:,1));
 if later == 1; 
-    clen = length(timeVsAcceleration(:,1));
+    
     final = clen;
 end
 
-timeElapsed = timeVsAcceleration(final,1);
-toptResults = zeros(final,2);
+
+walking = zeros(clen, 1);
 z = 1;
+
+sdData = std(timeVsAcceleration(:,2));
+        if sdData < sdWalkingThresh
+         walking(:,1) = 0;
+        end
+
 for p = 1:final
-        %sdData = std(acc);
-        %if sdData < sdWalkingThresh
-        %    toptResults(z, 1) = tOpt;
-        %    toptResults(z, 2) = nascResult;
-        %    z=z+1;
-        %    continue;
-        %end
+        
         %do Nasc on all data
-        [tOpt, nascResult] = nascv2(timeVsAcceleration, p, tmax, tmin);
+        [nascResult] = nascv1WD(timeVsAcceleration,p, tmin, tmax);
                 
         if nascResult > RThresh
-            %walking(p, 1) = 1;
-            toptResults(z, 1) = tOpt;
-            toptResults(z, 2) = nascResult;
-            z=z+1;
+            walking(z, 1) = 1;
         else
-            %walking(p, 1) = 0;
+            walking(z, 1) = 0;
         end
+        z=z+1;
 end
 
+wlen = length(walking);
+startedWalking = 0;
+stoppedWalking = 0;
+walkingPeriods = 0;
 
-[~, maxIdx] = max(toptResults(:,2));
-maxTOpt = toptResults(maxIdx, 1);
 
-%stepsTaken = 1 + floor((timeElapsed-half)/maxTOpt);
-stepsTaken = floor(timeElapsed/(maxTOpt/2));
-    
+for p = 1:wlen
+    if p == 1
+      continue
+    else 
+        prev = p-1;
+        if walking(prev, 1) == 0 
+            if walking(p, 1) == 1 
+                startedWalking=startedWalking +1;
+            end
+        end
+        if walking(prev, 1) == 1
+            if walking(p,1) == 0
+                stoppedWalking = stoppedWalking+1;
+            end
+        end
+    end
 end
 
+if walking(1,1) ==  1
+   walkingPeriods = stoppedWalking;
+   if walking(wlen,1) == 1
+       walkingPeriods = walkingPeriods +1;
+   end
+else 
+   walkingPeriods = startedWalking;
+end
+end
